@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Webhook UI</title>
+  <style>
+    /* Base page styling */
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    /* Each event box */
+    .event {
+      background: #fff;
+      padding: 15px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      border-left: 4px solid #ddd;
+    }
+
+    /* Event label (PUSH, MERGE, etc.) */
+    .label {
+      display: inline-block;
+      background-color: #ffebeb; /* Light red background */
+      color: #d10000;            /* Dark red text */
+      font-weight: bold;
+      font-size: 13px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Page Title -->
+  <h1>Latest GitHub Events</h1>
+
+  <!-- Container for events -->
+  <div id="events">Loading events...</div>
+
+  <script>
+    // Format how each event should be displayed based on its type
+    function formatEvent(event) {
+      let label = '';
+
+      if (event.type === 'push') {
+        label = `<div class="label">PUSH</div>`;
+        return `${label}<br>${event.author} pushed to <strong>${event.to_branch}</strong> on ${event.timestamp}`;
+      } else if (event.type === 'pull_request') {
+        label = `<div class="label">PULL REQUEST</div>`;
+        return `${label}<br>${event.author} opened a pull request from <strong>${event.from_branch}</strong> to <strong>${event.to_branch}</strong> on ${event.timestamp}`;
+      } else if (event.type === 'merge') {
+        label = `<div class="label">MERGE</div>`;
+        return `${label}<br>${event.author} merged <strong>${event.from_branch}</strong> into <strong>${event.to_branch}</strong> on ${event.timestamp}`;
+      } else {
+        return '<div class="label">UNKNOWN</div><br>Unknown event';
+      }
+    }
+
+    // Fetch latest events from backend and update the UI
+    async function fetchEvents() {
+      try {
+        const res = await fetch('/events');  // Call the /events API
+        const data = await res.json();       // Parse the JSON data
+        const container = document.getElementById('events');
+        container.innerHTML = '';            // Clear old events
+
+        if (data.length === 0) {
+          container.textContent = 'No events yet.';  // Show message if no events
+          return;
+        }
+
+        // Add each event to the page
+        data.forEach(event => {
+          const div = document.createElement('div');
+          div.className = 'event';
+          div.innerHTML = formatEvent(event);
+          container.appendChild(div);
+        });
+      } catch (err) {
+        // If error occurs while fetching events
+        document.getElementById('events').textContent = 'Error fetching events.';
+        console.error(err);
+      }
+    }
+
+    // Fetch events every 15 seconds
+    setInterval(fetchEvents, 15000);
+    fetchEvents(); // Also run it once immediately
+  </script>
+</body>
+</html>
